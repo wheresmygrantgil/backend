@@ -9,6 +9,7 @@ import re
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+router.limiter = limiter
 
 # Validation helper
 def validate_id(value: str, name: str):
