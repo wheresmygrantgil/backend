@@ -47,10 +47,10 @@ def record_vote(request: Request, vote: VoteSchema, db: Session = Depends(get_db
     ).first()
 
     if existing:
-        existing.action = vote.action  # update existing vote
+        existing.action = vote.action
         existing.timestamp = datetime.utcnow()
     else:
-        db.add(Vote(**vote.dict()))  # insert new vote
+        db.add(Vote(**vote.dict()))
     db.commit()
     return {"status": "success"}
 
