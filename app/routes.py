@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from .database import get_db
 from .models import Vote
 from .schemas import VoteSchema, VoteOut
@@ -85,6 +85,11 @@ def get_grant_votes(grant_id: str, db: Session = Depends(get_db)):
         "dislikes": sum(v.action == "dislike" for v in votes)
     }
 
+# Alias for frontend convenience
+@router.get("/votes/summary/{grant_id}")
+def get_grant_votes_summary(grant_id: str, db: Session = Depends(get_db)):
+    return get_grant_votes(grant_id, db)
+
 # GET specific researcher vote on a grant
 @router.get("/vote/{grant_id}/{researcher_id}")
 def get_researcher_vote(grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
@@ -97,6 +102,11 @@ def get_researcher_vote(grant_id: str, researcher_id: str, db: Session = Depends
     ).first()
     return {"grant_id": grant_id, "researcher_id": researcher_id, "action": vote.action if vote else None}
 
+# Alias for frontend convenience
+@router.get("/votes/user/{grant_id}/{researcher_id}")
+def get_researcher_vote_alias(grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
+    return get_researcher_vote(grant_id, researcher_id, db)
+
 # GET all votes by researcher
 @router.get("/votes/researcher/{researcher_id}", response_model=List[VoteOut])
 def get_votes_by_researcher(researcher_id: str, db: Session = Depends(get_db)):
@@ -108,12 +118,12 @@ def get_votes_by_researcher(researcher_id: str, db: Session = Depends(get_db)):
 # Top voted grants
 @router.get("/votes/top")
 def get_top_grants(limit: int = 10, db: Session = Depends(get_db)):
-    likes_agg = func.sum(func.case((Vote.action == "like", 1), else_=0))
+    likes_agg = func.sum(case((Vote.action == "like", 1), else_=0))
     results = (
         db.query(
             Vote.grant_id,
             likes_agg.label("likes"),
-            func.sum(func.case((Vote.action == "dislike", 1), else_=0)).label("dislikes")
+            func.sum(case((Vote.action == "dislike", 1), else_=0)).label("dislikes")
         )
         .group_by(Vote.grant_id)
         .order_by(likes_agg.desc())
@@ -134,8 +144,8 @@ def get_top_grants(limit: int = 10, db: Session = Depends(get_db)):
 def vote_ratio(grant_id: str, db: Session = Depends(get_db)):
     validate_id(grant_id, "grant_id")
     counts = db.query(
-        func.sum(func.case((Vote.action == "like", 1), else_=0)).label("likes"),
-        func.sum(func.case((Vote.action == "dislike", 1), else_=0)).label("dislikes")
+        func.sum(case((Vote.action == "like", 1), else_=0)).label("likes"),
+        func.sum(case((Vote.action == "dislike", 1), else_=0)).label("dislikes")
     ).filter(Vote.grant_id == grant_id).one()
     likes = counts.likes or 0
     dislikes = counts.dislikes or 0
@@ -156,7 +166,7 @@ def researcher_summary(researcher_id: str, db: Session = Depends(get_db)):
     validate_id(researcher_id, "researcher_id")
     summary_stats = db.query(
         func.count(Vote.action).label("total_votes"),
-        func.sum(func.case((Vote.action == "like", 1), else_=0)).label("likes")
+        func.sum(case((Vote.action == "like", 1), else_=0)).label("likes")
     ).filter(Vote.researcher_id == researcher_id).one()
 
     total_votes = summary_stats.total_votes or 0
@@ -249,12 +259,12 @@ def health_check(db: Session = Depends(get_db)):
     unique_researchers = db.query(func.count(func.distinct(Vote.researcher_id))).scalar() or 0
 
     # Top grant by likes
-    likes_agg = func.sum(func.case((Vote.action == "like", 1), else_=0))
+    likes_agg = func.sum(case((Vote.action == "like", 1), else_=0))
     top = (
         db.query(
             Vote.grant_id,
             likes_agg.label("likes"),
-            func.sum(func.case((Vote.action == "dislike", 1), else_=0)).label("dislikes")
+            func.sum(case((Vote.action == "dislike", 1), else_=0)).label("dislikes")
         )
         .group_by(Vote.grant_id)
         .order_by(likes_agg.desc())
