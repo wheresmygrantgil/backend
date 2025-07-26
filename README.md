@@ -8,7 +8,9 @@ This backend is private (frontend is public via GitHub Pages) and designed to be
 
 Features
 
-Vote storage: Each researcher can like or dislike each grant (one vote per researcher per grant, can update).
+Vote storage: Each researcher can like or dislike each grant (one vote per researcher per grant, can update). Each vote records a UTC timestamp that updates whenever the researcher changes their vote.
+
+Timestamps are returned in ISO 8601 format.
 
 Endpoints:
 
@@ -22,6 +24,12 @@ Endpoints:
 
 
 4. Submit or update a vote.
+
+5. Delete a vote.
+
+6. Analytics endpoints (top grants, ratios, researcher summary, vote trend).
+
+7. Export all votes in JSON or CSV.
 
 
 
@@ -177,6 +185,70 @@ Example response:
   {"grant_id": "456xyz", "action": "dislike"}
 ]
 ```
+
+### DELETE /vote/{grant_id}/{researcher_id}
+Remove a researcher's vote on a grant.
+
+Example response:
+```json
+{"status": "deleted"}
+```
+
+### GET /votes/top?limit=10
+List top voted grants sorted by likes (descending).
+
+Example response:
+```json
+[
+  {"grant_id": "abc", "likes": 15, "dislikes": 5},
+  {"grant_id": "def", "likes": 10, "dislikes": 2}
+]
+```
+
+### GET /votes/ratio/{grant_id}
+Return like/dislike percentage for a grant.
+
+Example response:
+```json
+{
+  "grant_id": "abc",
+  "likes": 15,
+  "dislikes": 5,
+  "like_percentage": 75.0,
+  "dislike_percentage": 25.0
+}
+```
+
+### GET /researcher/{researcher_id}/summary
+Summary of a researcher's voting activity.
+
+Example response:
+```json
+{
+  "total_votes": 12,
+  "likes": 8,
+  "dislikes": 4,
+  "recent_votes": [
+    {"grant_id": "abc", "action": "like", "timestamp": "..."}
+  ]
+}
+```
+
+### GET /votes/export/json
+Export all votes as JSON list.
+
+Example response:
+```json
+[
+  {"grant_id": "abc", "researcher_id": "gil", "action": "like", "timestamp": "2025-07-25T12:00:00Z"}
+]
+```
+
+### GET /votes/export/csv
+Download all votes as CSV file.
+
+### GET /votes/trend/{grant_id}
+Votes over time grouped by day for graphing.
 
 ---
 
