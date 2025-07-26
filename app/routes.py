@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from .database import get_db
@@ -28,7 +28,7 @@ def validate_id(value: str, name: str):
 # POST vote (create or update)
 @router.post("/vote")
 @limiter.limit("5/minute")
-def record_vote(vote: VoteSchema, db: Session = Depends(get_db)):
+def record_vote(request: Request, vote: VoteSchema, db: Session = Depends(get_db)):
     validate_id(vote.grant_id, "grant_id")
     validate_id(vote.researcher_id, "researcher_id")
 
@@ -51,7 +51,7 @@ def record_vote(vote: VoteSchema, db: Session = Depends(get_db)):
 # DELETE vote
 @router.delete("/vote/{grant_id}/{researcher_id}")
 @limiter.limit("5/minute")
-def delete_vote(grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
+def delete_vote(request: Request, grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
     validate_id(grant_id, "grant_id")
     validate_id(researcher_id, "researcher_id")
 
