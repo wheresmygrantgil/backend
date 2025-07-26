@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 class VoteSchema(BaseModel):
     grant_id: str
@@ -7,4 +8,7 @@ class VoteSchema(BaseModel):
 
 
 class VoteOut(VoteSchema):
-    timestamp: str
+    timestamp: datetime
+
+    class Config:
+        orm_mode = True
