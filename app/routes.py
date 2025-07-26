@@ -16,6 +16,7 @@ import re
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+router.limiter = limiter  # expose limiter for FastAPI app
 
 # Validation helper
 def validate_id(value: str, name: str):
@@ -226,4 +227,4 @@ def vote_trend(grant_id: str, db: Session = Depends(get_db)):
         .order_by("day")
         .all()
     )
-    return [{"day": r.day.isoformat(), "count": r.count} for r in results]
+    return [{"day": str(r.day), "count": r.count} for r in results]
