@@ -1,5 +1,3 @@
-
-
 # Grand Grant Matcher Backend
 
 A minimal FastAPI backend for storing likes and dislikes of researchers on grants.
@@ -125,47 +123,60 @@ Access API docs: http://127.0.0.1:8000/docs
 
 ---
 
-API Endpoints
+## API Endpoints
 
-POST /vote
+All endpoints return JSON. The live API provides interactive docs at `/docs`.
 
-Submit or update a vote.
+### POST /vote
+Create or update a researcher's vote for a grant.
 
+Request body:
+```json
 {
   "grant_id": "123abc",
   "researcher_id": "gil",
   "action": "like"
 }
+```
+Response:
+```json
+{"status": "success"}
+```
 
-GET /votes/{grant_id}
+### GET /votes/{grant_id}
+Return total likes and dislikes for a grant.
 
-Get total likes/dislikes for a grant.
-
+Example response:
+```json
 {
   "grant_id": "123abc",
   "likes": 10,
   "dislikes": 3
 }
+```
 
-GET /vote/{grant_id}/{researcher_id}
+### GET /vote/{grant_id}/{researcher_id}
+Return a researcher's vote on a grant.
 
-Get a researcher’s vote on a specific grant.
-
+Example response:
+```json
 {
   "grant_id": "123abc",
   "researcher_id": "gil",
   "action": "like"
 }
+```
 
-GET /votes/researcher/{researcher_id}
+### GET /votes/researcher/{researcher_id}
+List all votes submitted by a researcher.
 
-Get all votes by a researcher.
-
+Example response:
+```json
 [
   {"grant_id": "123abc", "action": "like"},
   {"grant_id": "456xyz", "action": "dislike"}
 ]
-
+```
 
 ---
 
