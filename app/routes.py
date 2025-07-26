@@ -20,7 +20,8 @@ router.limiter = limiter  # expose limiter for FastAPI app
 
 # Validation helper
 def validate_id(value: str, name: str):
-    if not re.match(r"^[A-Za-z0-9_\-]+$", value):
+    # allow alphanumeric, underscore, and hyphen characters only
+    if not re.match(r"^[A-Za-z0-9_-]+$", value):
         raise HTTPException(400, f"Invalid {name}")
     return value
 
