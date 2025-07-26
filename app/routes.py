@@ -20,9 +20,15 @@ router.limiter = limiter  # expose limiter for FastAPI app
 
 # Validation helper
 def validate_id(value: str, name: str):
-    # allow alphanumeric, underscore, and hyphen characters only
-    if not re.match(r"^[A-Za-z0-9_-]+$", value):
-        raise HTTPException(400, f"Invalid {name}")
+    """Validate grant or researcher identifier."""
+    if name == "researcher_id":
+        # allow letters, numbers, spaces, comma, apostrophe and hyphen
+        if not re.match(r"^[A-Za-z0-9 ,'-]+$", value):
+            raise HTTPException(400, f"Invalid {name}")
+    else:
+        # grant_id remains restricted to alphanumeric, underscore and hyphen
+        if not re.match(r"^[A-Za-z0-9_-]+$", value):
+            raise HTTPException(400, f"Invalid {name}")
     return value
 
 # POST vote (create or update)

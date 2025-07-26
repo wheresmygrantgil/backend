@@ -8,8 +8,8 @@ Create or update a researcher's vote for a grant.
 Request body:
 ```json
 {
-  "grant_id": "123abc",
-  "researcher_id": "gil",
+  "grant_id": "abc-1234",
+  "researcher_id": "Zeevi, Gil",
   "action": "like"
 }
 ```
@@ -17,6 +17,7 @@ Response:
 ```json
 {"status": "success"}
 ```
+The backend adds a timestamp to each vote automatically; clients do not send it.
 
 ### GET /votes/{grant_id}
 Return total likes and dislikes for a grant.
@@ -24,7 +25,7 @@ Return total likes and dislikes for a grant.
 Example response:
 ```json
 {
-  "grant_id": "123abc",
+  "grant_id": "abc-1234",
   "likes": 10,
   "dislikes": 3
 }
@@ -36,11 +37,13 @@ Return a researcher's vote on a grant.
 Example response:
 ```json
 {
-  "grant_id": "123abc",
-  "researcher_id": "gil",
+  "grant_id": "abc-1234",
+  "researcher_id": "Zeevi, Gil",
   "action": "like"
 }
 ```
+If the researcher has not voted on the grant, `action` will be `null` and the
+request still returns HTTP 200.
 
 ### GET /votes/researcher/{researcher_id}
 List all votes submitted by a researcher.
@@ -48,10 +51,11 @@ List all votes submitted by a researcher.
 Example response:
 ```json
 [
-  {"grant_id": "123abc", "action": "like"},
-  {"grant_id": "456xyz", "action": "dislike"}
+  {"grant_id": "abc-1234", "action": "like"},
+  {"grant_id": "xyz-789", "action": "dislike"}
 ]
 ```
+If the researcher has not voted yet, the response is an empty list.
 
 ### DELETE /vote/{grant_id}/{researcher_id}
 Remove a researcher's vote on a grant.
@@ -67,8 +71,8 @@ List top voted grants sorted by likes (descending).
 Example response:
 ```json
 [
-  {"grant_id": "abc", "likes": 15, "dislikes": 5},
-  {"grant_id": "def", "likes": 10, "dislikes": 2}
+  {"grant_id": "abc-1234", "likes": 15, "dislikes": 5},
+  {"grant_id": "xyz-789", "likes": 10, "dislikes": 2}
 ]
 ```
 
@@ -78,7 +82,7 @@ Return like/dislike percentage for a grant.
 Example response:
 ```json
 {
-  "grant_id": "abc",
+  "grant_id": "abc-1234",
   "likes": 15,
   "dislikes": 5,
   "like_percentage": 75.0,
@@ -96,7 +100,7 @@ Example response:
   "likes": 8,
   "dislikes": 4,
   "recent_votes": [
-    {"grant_id": "abc", "action": "like", "timestamp": "..."}
+    {"grant_id": "abc-1234", "action": "like", "timestamp": "..."}
   ]
 }
 ```
@@ -107,7 +111,7 @@ Export all votes as JSON list.
 Example response:
 ```json
 [
-  {"grant_id": "abc", "researcher_id": "gil", "action": "like", "timestamp": "2025-07-25T12:00:00Z"}
+  {"grant_id": "abc-1234", "researcher_id": "Zeevi, Gil", "action": "like", "timestamp": "2025-07-25T12:00:00Z"}
 ]
 ```
 
