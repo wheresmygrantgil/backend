@@ -13,7 +13,10 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS (update with your GitHub Pages domain)
-origins = ["https://wheresmygrants.github.io", "http://localhost:3000"]
+origins = [
+    "https://wheresmygrantgil.github.io/ggmatcher",
+    "http://localhost:8000"
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
