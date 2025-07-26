@@ -250,6 +250,25 @@ Download all votes as CSV file.
 ### GET /votes/trend/{grant_id}
 Votes over time grouped by day for graphing.
 
+### GET /health
+Lightweight service check and basic voting stats.
+
+Example response:
+```json
+{
+  "status": "ok",
+  "total_votes": 125,
+  "unique_grants": 12,
+  "unique_researchers": 8,
+  "top_grant": {
+    "grant_id": "abc123",
+    "likes": 25,
+    "dislikes": 2
+  },
+  "last_vote_timestamp": "2025-07-26T09:30:00Z"
+}
+```
+
 ---
 
 Security & Rate Limiting

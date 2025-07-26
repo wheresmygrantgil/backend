@@ -229,3 +229,47 @@ def vote_trend(grant_id: str, db: Session = Depends(get_db)):
         .all()
     )
     return [{"day": str(r.day), "count": r.count} for r in results]
+
+# Lightweight health endpoint with basic stats
+@router.get("/health")
+def health_check(db: Session = Depends(get_db)):
+    # Total votes
+    total_votes = db.query(func.count(Vote.grant_id)).scalar() or 0
+
+    # Unique grants
+    unique_grants = db.query(func.count(func.distinct(Vote.grant_id))).scalar() or 0
+
+    # Unique researchers
+    unique_researchers = db.query(func.count(func.distinct(Vote.researcher_id))).scalar() or 0
+
+    # Top grant by likes
+    likes_agg = func.sum(func.case((Vote.action == "like", 1), else_=0))
+    top = (
+        db.query(
+            Vote.grant_id,
+            likes_agg.label("likes"),
+            func.sum(func.case((Vote.action == "dislike", 1), else_=0)).label("dislikes")
+        )
+        .group_by(Vote.grant_id)
+        .order_by(likes_agg.desc())
+        .first()
+    )
+    top_grant = None
+    if top:
+        top_grant = {
+            "grant_id": top.grant_id,
+            "likes": int(top.likes),
+            "dislikes": int(top.dislikes)
+        }
+
+    # Last vote timestamp
+    last_vote = db.query(func.max(Vote.timestamp)).scalar()
+
+    return {
+        "status": "ok",
+        "total_votes": total_votes,
+        "unique_grants": unique_grants,
+        "unique_researchers": unique_researchers,
+        "top_grant": top_grant,
+        "last_vote_timestamp": last_vote.isoformat() if last_vote else None
+    }
