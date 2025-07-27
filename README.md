@@ -60,7 +60,9 @@ Postgres-ready for future scaling.
 
 Repository Structure
 
-grantscout-backend/
+
+```
+ggmatcher-backend/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py        # FastAPI entrypoint
@@ -72,7 +74,7 @@ grantscout-backend/
 ├── .env.example       # Example environment variables
 ├── Dockerfile         # For Render deployment
 └── README.md          # This documentation
-
+```
 
 ---
 
@@ -99,7 +101,7 @@ Setup Instructions
 1. Clone the repository
 
 git clone <repo-url>
-cd grantscout-backend
+cd ggmatcher-backend
 
 2. Create and activate virtual environment
 
@@ -185,7 +187,7 @@ DATABASE_URL=sqlite:///./votes.db
 
 3. Deploy → Render will provide a public API URL like:
 
-https://grantscout-backend.onrender.com
+https://ggmatcher-backend.onrender.com
 
 
 
