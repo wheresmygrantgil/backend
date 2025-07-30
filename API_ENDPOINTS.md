@@ -9,7 +9,7 @@ Request body:
 ```json
 {
   "grant_id": "abc-1234",
-  "researcher_id": "Zeevi, Gil",
+  "researcher_name": "Zeevi, Gil",
   "action": "like"
 }
 ```
@@ -31,21 +31,21 @@ Example response:
 }
 ```
 
-### GET /vote/{grant_id}/{researcher_id}
+### GET /vote/{grant_id}/{researcher_name}
 Return a researcher's vote on a grant.
 
 Example response:
 ```json
 {
   "grant_id": "abc-1234",
-  "researcher_id": "Zeevi, Gil",
+  "researcher_name": "Zeevi, Gil",
   "action": "like"
 }
 ```
 If the researcher has not voted on the grant, `action` will be `null` and the
 request still returns HTTP 200.
 
-### GET /votes/researcher/{researcher_id}
+### GET /votes/researcher/{researcher_name}
 List all votes submitted by a researcher.
 
 Example response:
@@ -57,7 +57,7 @@ Example response:
 ```
 If the researcher has not voted yet, the response is an empty list.
 
-### DELETE /vote/{grant_id}/{researcher_id}
+### DELETE /vote/{grant_id}/{researcher_name}
 Remove a researcher's vote on a grant.
 
 Example response:
@@ -90,7 +90,7 @@ Example response:
 }
 ```
 
-### GET /researcher/{researcher_id}/summary
+### GET /researcher/{researcher_name}/summary
 Summary of a researcher's voting activity.
 
 Example response:
@@ -111,7 +111,7 @@ Export all votes as JSON list.
 Example response:
 ```json
 [
-  {"grant_id": "abc-1234", "researcher_id": "Zeevi, Gil", "action": "like", "timestamp": "2025-07-25T12:00:00Z"}
+  {"grant_id": "abc-1234", "researcher_name": "Zeevi, Gil", "action": "like", "timestamp": "2025-07-25T12:00:00Z"}
 ]
 ```
 

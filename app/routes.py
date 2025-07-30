@@ -20,8 +20,12 @@ router.limiter = limiter  # expose limiter for FastAPI app
 
 # Validation helper
 def validate_id(value: str, name: str):
-    """Validate grant or researcher identifier."""
-    if name == "researcher_id":
+    """Validate grant or researcher identifier.
+
+    `researcher_name` may contain letters, numbers, spaces, commas, apostrophes
+    and hyphens.
+    """
+    if name == "researcher_name":
         # allow letters, numbers, spaces, comma, apostrophe and hyphen
         if not re.match(r"^[A-Za-z0-9 ,'-]+$", value):
             raise HTTPException(400, f"Invalid {name}")
@@ -36,14 +40,14 @@ def validate_id(value: str, name: str):
 @limiter.limit("5/minute")
 def record_vote(request: Request, vote: VoteSchema, db: Session = Depends(get_db)):
     validate_id(vote.grant_id, "grant_id")
-    validate_id(vote.researcher_id, "researcher_id")
+    validate_id(vote.researcher_name, "researcher_name")
 
     if vote.action not in ["like", "dislike"]:
         raise HTTPException(400, "Invalid action")
 
     existing = db.query(Vote).filter(
         Vote.grant_id == vote.grant_id,
-        Vote.researcher_id == vote.researcher_id
+        Vote.researcher_name == vote.researcher_name
     ).first()
 
     if existing:
@@ -55,15 +59,15 @@ def record_vote(request: Request, vote: VoteSchema, db: Session = Depends(get_db
     return {"status": "success"}
 
 # DELETE vote
-@router.delete("/vote/{grant_id}/{researcher_id}")
+@router.delete("/vote/{grant_id}/{researcher_name}")
 @limiter.limit("5/minute")
-def delete_vote(request: Request, grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
+def delete_vote(request: Request, grant_id: str, researcher_name: str, db: Session = Depends(get_db)):
     validate_id(grant_id, "grant_id")
-    validate_id(researcher_id, "researcher_id")
+    validate_id(researcher_name, "researcher_name")
 
     vote = db.query(Vote).filter(
         Vote.grant_id == grant_id,
-        Vote.researcher_id == researcher_id
+        Vote.researcher_name == researcher_name
     ).first()
 
     if not vote:
@@ -91,28 +95,28 @@ def get_grant_votes_summary(grant_id: str, db: Session = Depends(get_db)):
     return get_grant_votes(grant_id, db)
 
 # GET specific researcher vote on a grant
-@router.get("/vote/{grant_id}/{researcher_id}")
-def get_researcher_vote(grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
+@router.get("/vote/{grant_id}/{researcher_name}")
+def get_researcher_vote(grant_id: str, researcher_name: str, db: Session = Depends(get_db)):
     validate_id(grant_id, "grant_id")
-    validate_id(researcher_id, "researcher_id")
+    validate_id(researcher_name, "researcher_name")
 
     vote = db.query(Vote).filter(
         Vote.grant_id == grant_id,
-        Vote.researcher_id == researcher_id
+        Vote.researcher_name == researcher_name
     ).first()
-    return {"grant_id": grant_id, "researcher_id": researcher_id, "action": vote.action if vote else None}
+    return {"grant_id": grant_id, "researcher_name": researcher_name, "action": vote.action if vote else None}
 
 # Alias for frontend convenience
-@router.get("/votes/user/{grant_id}/{researcher_id}")
-def get_researcher_vote_alias(grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
-    return get_researcher_vote(grant_id, researcher_id, db)
+@router.get("/votes/user/{grant_id}/{researcher_name}")
+def get_researcher_vote_alias(grant_id: str, researcher_name: str, db: Session = Depends(get_db)):
+    return get_researcher_vote(grant_id, researcher_name, db)
 
 # GET all votes by researcher
-@router.get("/votes/researcher/{researcher_id}", response_model=List[VoteOut])
-def get_votes_by_researcher(researcher_id: str, db: Session = Depends(get_db)):
-    validate_id(researcher_id, "researcher_id")
+@router.get("/votes/researcher/{researcher_name}", response_model=List[VoteOut])
+def get_votes_by_researcher(researcher_name: str, db: Session = Depends(get_db)):
+    validate_id(researcher_name, "researcher_name")
 
-    votes = db.query(Vote).filter(Vote.researcher_id == researcher_id).all()
+    votes = db.query(Vote).filter(Vote.researcher_name == researcher_name).all()
     return votes
 
 # Top voted grants
@@ -161,13 +165,13 @@ def vote_ratio(grant_id: str, db: Session = Depends(get_db)):
     }
 
 # Researcher summary
-@router.get("/researcher/{researcher_id}/summary")
-def researcher_summary(researcher_id: str, db: Session = Depends(get_db)):
-    validate_id(researcher_id, "researcher_id")
+@router.get("/researcher/{researcher_name}/summary")
+def researcher_summary(researcher_name: str, db: Session = Depends(get_db)):
+    validate_id(researcher_name, "researcher_name")
     summary_stats = db.query(
         func.count(Vote.action).label("total_votes"),
         func.sum(case((Vote.action == "like", 1), else_=0)).label("likes")
-    ).filter(Vote.researcher_id == researcher_id).one()
+    ).filter(Vote.researcher_name == researcher_name).one()
 
     total_votes = summary_stats.total_votes or 0
     likes = summary_stats.likes or 0
@@ -175,7 +179,7 @@ def researcher_summary(researcher_id: str, db: Session = Depends(get_db)):
 
     recent_votes_db = (
         db.query(Vote)
-        .filter(Vote.researcher_id == researcher_id)
+        .filter(Vote.researcher_name == researcher_name)
         .order_by(Vote.timestamp.desc())
         .limit(10)
         .all()
@@ -203,7 +207,7 @@ def export_json(db: Session = Depends(get_db)):
             yield json.dumps(
                 {
                     "grant_id": v.grant_id,
-                    "researcher_id": v.researcher_id,
+                    "researcher_name": v.researcher_name,
                     "action": v.action,
                     "timestamp": v.timestamp.isoformat(),
                 }
@@ -219,13 +223,13 @@ def export_csv(db: Session = Depends(get_db)):
     def iter_votes_csv():
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["grant_id", "researcher_id", "action", "timestamp"])
+        writer.writerow(["grant_id", "researcher_name", "action", "timestamp"])
         yield output.getvalue()
         output.seek(0)
         output.truncate(0)
 
         for v in db.query(Vote).yield_per(1000):
-            writer.writerow([v.grant_id, v.researcher_id, v.action, v.timestamp.isoformat()])
+            writer.writerow([v.grant_id, v.researcher_name, v.action, v.timestamp.isoformat()])
             yield output.getvalue()
             output.seek(0)
             output.truncate(0)
@@ -256,7 +260,7 @@ def health_check(db: Session = Depends(get_db)):
     unique_grants = db.query(func.count(func.distinct(Vote.grant_id))).scalar() or 0
 
     # Unique researchers
-    unique_researchers = db.query(func.count(func.distinct(Vote.researcher_id))).scalar() or 0
+    unique_researchers = db.query(func.count(func.distinct(Vote.researcher_name))).scalar() or 0
 
     # Top grant by likes
     likes_agg = func.sum(case((Vote.action == "like", 1), else_=0))
