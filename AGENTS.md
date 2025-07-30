@@ -72,7 +72,7 @@ SQLite file votes.db via SQLAlchemy ORM.
 
 Models defined in models.py:
 
-Vote(grant_id, researcher_id, action)
+Vote(grant_id, researcher_name, action)
 
 
 
@@ -82,9 +82,9 @@ POST /vote: Create or update vote.
 
 GET /votes/{grant_id}: Total likes/dislikes for a grant.
 
-GET /vote/{grant_id}/{researcher_id}: Researcher’s specific vote on a grant.
+GET /vote/{grant_id}/{researcher_name}: Researcher’s specific vote on a grant.
 
-GET /votes/researcher/{researcher_id}: All votes by researcher.
+GET /votes/researcher/{researcher_name}: All votes by researcher.
 
 
 Vote Logic
@@ -93,7 +93,7 @@ One vote per researcher per grant.
 
 Can change from like → dislike (or vice versa).
 
-Composite key (grant_id, researcher_id) ensures uniqueness.
+Composite key (grant_id, researcher_name) ensures uniqueness.
 
 
 
@@ -108,7 +108,8 @@ Limit 5 requests per minute per IP using slowapi.
 
 Validation
 
-grant_id and researcher_id must be alphanumeric or -/_.
+grant_id must be alphanumeric, underscore or hyphen.
+researcher_name may include letters, numbers, spaces, commas, apostrophes and hyphens.
 
 Reject malformed IDs (HTTP 400).
 
@@ -188,9 +189,9 @@ POST /vote (new vote and update).
 
 GET /votes/{grant_id} (aggregate counts).
 
-GET /vote/{grant_id}/{researcher_id} (specific vote).
+GET /vote/{grant_id}/{researcher_name} (specific vote).
 
-GET /votes/researcher/{researcher_id} (all votes for researcher).
+GET /votes/researcher/{researcher_name} (all votes for researcher).
 
 
 
@@ -237,7 +238,7 @@ Request Body:
 
 {
   "grant_id": "123abc",
-  "researcher_id": "gil",
+  "researcher_name": "gil",
   "action": "like"
 }
 
@@ -251,17 +252,17 @@ Response:
   "dislikes": 3
 }
 
-GET /vote/{grant_id}/{researcher_id}
+GET /vote/{grant_id}/{researcher_name}
 
 Response:
 
 {
   "grant_id": "123abc",
-  "researcher_id": "gil",
+  "researcher_name": "gil",
   "action": "like"
 }
 
-GET /votes/researcher/{researcher_id}
+GET /votes/researcher/{researcher_name}
 
 Response:
 

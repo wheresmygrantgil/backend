@@ -3,7 +3,7 @@ from datetime import datetime
 
 class VoteSchema(BaseModel):
     grant_id: str
-    researcher_id: str   # direct field name, no alias
+    researcher_name: str   # direct field name, no alias
     action: str          # like or dislike
 
     model_config = ConfigDict(from_attributes=True)

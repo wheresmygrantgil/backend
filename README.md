@@ -145,7 +145,7 @@ Security & Rate Limiting
 Rate limit: 5 votes per minute per IP (configured with slowapi).
 
 ID validation: grant_id may contain letters, numbers, underscores and hyphens.
-Researcher names may include letters, numbers, spaces, commas and hyphens.
+The field `researcher_name` identifies the researcher being evaluated and may include letters, numbers, spaces, commas and hyphens.
 
 CORS: Only allows:
 
