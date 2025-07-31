@@ -19,30 +19,24 @@ limiter = Limiter(key_func=get_remote_address)
 router.limiter = limiter  # expose limiter for FastAPI app
 
 # Validation helper
-def validate_id(value: str, name: str) -> str:
-    """
-    Validate and normalise grant or researcher identifiers.
-    Leading/trailing whitespace is stripped before validation.
-    Researcher IDs may contain letters, numbers, spaces, commas, apostrophes and hyphens.
-    Grant IDs may contain letters, numbers, underscores and hyphens.
-    Returns the normalised value on success or raises HTTPException on invalid input.
-    """
-    value = value.strip()
+def validate_id(value: str, name: str):
+    """Validate grant or researcher identifier."""
     if name == "researcher_id":
-        pattern = r"^[A-Za-z0-9 ,'-]+$"
+        # allow letters, numbers, spaces, comma, apostrophe and hyphen
+        if not re.match(r"^[A-Za-z0-9 ,'-]+$", value):
+            raise HTTPException(400, f"Invalid {name}")
     else:
-        pattern = r"^[A-Za-z0-9_-]+$"
-    if not re.match(pattern, value):
-        raise HTTPException(400, f"Invalid {name}")
+        # grant_id remains restricted to alphanumeric, underscore and hyphen
+        if not re.match(r"^[A-Za-z0-9_-]+$", value):
+            raise HTTPException(400, f"Invalid {name}")
     return value
 
 # POST vote (create or update)
 @router.post("/vote")
 @limiter.limit("5/minute")
 def record_vote(request: Request, vote: VoteSchema, db: Session = Depends(get_db)):
-    # Normalise and validate IDs to prevent duplicates like 'Alice ' vs 'Alice'
-    vote.grant_id = validate_id(vote.grant_id, "grant_id")
-    vote.researcher_id = validate_id(vote.researcher_id, "researcher_id")
+    validate_id(vote.grant_id, "grant_id")
+    validate_id(vote.researcher_id, "researcher_id")
 
     if vote.action not in ["like", "dislike"]:
         raise HTTPException(400, "Invalid action")
@@ -64,9 +58,8 @@ def record_vote(request: Request, vote: VoteSchema, db: Session = Depends(get_db
 @router.delete("/vote/{grant_id}/{researcher_id}")
 @limiter.limit("5/minute")
 def delete_vote(request: Request, grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
-    # Normalise parameters
-    grant_id = validate_id(grant_id, "grant_id")
-    researcher_id = validate_id(researcher_id, "researcher_id")
+    validate_id(grant_id, "grant_id")
+    validate_id(researcher_id, "researcher_id")
 
     vote = db.query(Vote).filter(
         Vote.grant_id == grant_id,
@@ -83,7 +76,7 @@ def delete_vote(request: Request, grant_id: str, researcher_id: str, db: Session
 # GET total actions per grant
 @router.get("/votes/{grant_id}")
 def get_grant_votes(grant_id: str, db: Session = Depends(get_db)):
-    grant_id = validate_id(grant_id, "grant_id")
+    validate_id(grant_id, "grant_id")
 
     votes = db.query(Vote).filter(Vote.grant_id == grant_id).all()
     return {
@@ -100,15 +93,14 @@ def get_grant_votes_summary(grant_id: str, db: Session = Depends(get_db)):
 # GET specific researcher vote on a grant
 @router.get("/vote/{grant_id}/{researcher_id}")
 def get_researcher_vote(grant_id: str, researcher_id: str, db: Session = Depends(get_db)):
-    grant_id = validate_id(grant_id, "grant_id")
-    researcher_id = validate_id(researcher_id, "researcher_id")
+    validate_id(grant_id, "grant_id")
+    validate_id(researcher_id, "researcher_id")
 
     vote = db.query(Vote).filter(
         Vote.grant_id == grant_id,
         Vote.researcher_id == researcher_id
     ).first()
-    return {"grant_id": grant_id, "researcher_id": researcher_id,
-            "action": vote.action if vote else None}
+    return {"grant_id": grant_id, "researcher_id": researcher_id, "action": vote.action if vote else None}
 
 # Alias for frontend convenience
 @router.get("/votes/user/{grant_id}/{researcher_id}")
@@ -118,7 +110,7 @@ def get_researcher_vote_alias(grant_id: str, researcher_id: str, db: Session = D
 # GET all votes by researcher
 @router.get("/votes/researcher/{researcher_id}", response_model=List[VoteOut])
 def get_votes_by_researcher(researcher_id: str, db: Session = Depends(get_db)):
-    researcher_id = validate_id(researcher_id, "researcher_id")
+    validate_id(researcher_id, "researcher_id")
 
     votes = db.query(Vote).filter(Vote.researcher_id == researcher_id).all()
     return votes
