@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from urllib.parse import unquote
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from .database import get_db
@@ -21,6 +22,7 @@ router.limiter = limiter  # expose limiter for FastAPI app
 # Validation helper
 def validate_id(value: str, name: str):
     """Validate grant or researcher identifier."""
+    value = unquote(value)
     if name == "researcher_id":
         # allow letters, numbers, spaces, comma, apostrophe and hyphen
         if not re.match(r"^[A-Za-z0-9 ,'-]+$", value):
