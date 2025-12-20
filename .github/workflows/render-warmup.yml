@@ -11,10 +11,10 @@ jobs:
     steps:
       - name: Warm Render backend
         env:
-          RENDER_WARMUP_URL: ${{ secrets.RENDER_WARMUP_URL }}
+          RENDER_WARMUP_URL: ${{ secrets.RENDER_WARMUP_URL || 'https://ggm-backend.onrender.com/health' }}
         run: |
           if [ -z "${RENDER_WARMUP_URL}" ]; then
-            echo "RENDER_WARMUP_URL secret is not set."
+            echo "RENDER_WARMUP_URL is not set."
             exit 1
           fi
           curl --fail --silent --show-error --max-time 20 "${RENDER_WARMUP_URL}"
