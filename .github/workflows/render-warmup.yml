@@ -1,0 +1,20 @@
+name: Render Warmup
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warm Render backend
+        env:
+          RENDER_WARMUP_URL: ${{ secrets.RENDER_WARMUP_URL }}
+        run: |
+          if [ -z "${RENDER_WARMUP_URL}" ]; then
+            echo "RENDER_WARMUP_URL secret is not set."
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 20 "${RENDER_WARMUP_URL}"
