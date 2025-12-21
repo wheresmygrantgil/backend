@@ -17,4 +17,4 @@ jobs:
             echo "RENDER_WARMUP_URL is not set."
             exit 1
           fi
-          curl --fail --silent --show-error --max-time 20 "${RENDER_WARMUP_URL}"
+          curl --fail --silent --show-error --max-time 40 "${RENDER_WARMUP_URL}"
