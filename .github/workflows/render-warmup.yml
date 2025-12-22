@@ -15,6 +15,7 @@ jobs:
         run: |
           if [ -z "${RENDER_WARMUP_URL}" ]; then
             echo "RENDER_WARMUP_URL is not set."
-            exit 1
+            exit 0
           fi
-          curl --fail --silent --show-error --max-time 40 "${RENDER_WARMUP_URL}"
+          curl --fail --silent --show-error --max-time 40 "${RENDER_WARMUP_URL}" || true
+
