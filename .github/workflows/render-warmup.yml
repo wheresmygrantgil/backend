@@ -14,8 +14,24 @@ jobs:
           RENDER_WARMUP_URL: ${{ secrets.RENDER_WARMUP_URL || 'https://ggm-backend.onrender.com/health' }}
         run: |
           if [ -z "${RENDER_WARMUP_URL}" ]; then
-            echo "RENDER_WARMUP_URL is not set."
+            echo "RENDER_WARMUP_URL is not set. Skipping."
             exit 0
           fi
-          curl --fail --silent --show-error --max-time 40 "${RENDER_WARMUP_URL}" || true
 
+          echo "🔁 First ping..."
+          if curl -fsS --max-time 40 "${RENDER_WARMUP_URL}"; then
+            echo "✅ Backend responded on first try."
+            exit 0
+          fi
+
+          echo "😴 Server may be sleeping. Waiting 70 seconds..."
+          sleep 70
+
+          echo "🔁 Second ping..."
+          if curl -fsS --max-time 40 "${RENDER_WARMUP_URL}"; then
+            echo "✅ Backend responded on second try."
+          else
+            echo "⚠️ Backend did not respond after retry, but not failing workflow."
+          fi
+
+          exit 0
