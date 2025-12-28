@@ -1,47 +1,39 @@
 """Email notification service for admin alerts."""
 
-import asyncio
 import threading
 import os
 import logging
-from email.message import EmailMessage
 from datetime import datetime
 
-import aiosmtplib
+import resend
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+ADMIN_EMAIL = "gzeevi25@gmail.com"
 
-async def send_email_async(subject: str, body: str):
-    """Send email via Gmail SMTP asynchronously."""
-    gmail_user = os.getenv("GMAIL_USER")
-    gmail_password = os.getenv("GMAIL_APP_PASSWORD")
+
+def send_email(subject: str, body: str):
+    """Send email via Resend API."""
+    api_key = os.getenv("RESEND_API_KEY")
 
     logger.info(f"[EMAIL] Attempting to send email: {subject}")
-    logger.info(f"[EMAIL] GMAIL_USER configured: {bool(gmail_user)}")
-    logger.info(f"[EMAIL] GMAIL_APP_PASSWORD configured: {bool(gmail_password)}")
+    logger.info(f"[EMAIL] RESEND_API_KEY configured: {bool(api_key)}")
 
-    if not gmail_user or not gmail_password:
-        logger.warning("[EMAIL] Email credentials not configured, skipping notification")
+    if not api_key:
+        logger.warning("[EMAIL] RESEND_API_KEY not configured, skipping notification")
         return
 
-    message = EmailMessage()
-    message["From"] = gmail_user
-    message["To"] = gmail_user  # Send to self
-    message["Subject"] = subject
-    message.set_content(body)
+    resend.api_key = api_key
 
     try:
-        await aiosmtplib.send(
-            message,
-            hostname="smtp.gmail.com",
-            port=587,
-            start_tls=True,
-            username=gmail_user,
-            password=gmail_password,
-        )
-        logger.info(f"[EMAIL] Successfully sent email to {gmail_user}")
+        resend.Emails.send({
+            "from": "WMG Notifications <onboarding@resend.dev>",
+            "to": ADMIN_EMAIL,
+            "subject": subject,
+            "text": body,
+        })
+        logger.info(f"[EMAIL] Successfully sent email to {ADMIN_EMAIL}")
     except Exception as e:
         logger.error(f"[EMAIL] Failed to send email: {e}")
 
@@ -52,7 +44,7 @@ def send_notification_background(subject: str, body: str):
 
     def run():
         try:
-            asyncio.run(send_email_async(subject, body))
+            send_email(subject, body)
         except Exception as e:
             logger.error(f"[EMAIL] Background thread error: {e}")
 
