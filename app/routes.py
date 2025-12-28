@@ -18,6 +18,7 @@ import io
 import json
 from datetime import datetime
 from typing import List
+from .email_service import notify_new_subscription, notify_new_researcher_request
 import re
 
 router = APIRouter()
@@ -350,6 +351,7 @@ def create_subscription(sub: SubscriptionCreate, db: Session = Depends(get_db)):
     )
     db.add(new_sub)
     db.commit()
+    notify_new_subscription(sub.researcher_name, sub.email, db)
     return {"status": "success", "message": "Subscription created successfully."}
 
 
@@ -433,6 +435,7 @@ def create_researcher_request(req: ResearcherRequestCreate, db: Session = Depend
     )
     db.add(new_req)
     db.commit()
+    notify_new_researcher_request(req.display_name, req.openalex_id, req.requester_email, db)
     return {"status": "success", "message": "Request submitted successfully."}
 
 
