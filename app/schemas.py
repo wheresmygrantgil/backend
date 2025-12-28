@@ -25,6 +25,15 @@ class SubscriptionStatus(BaseModel):
     email_hint: Optional[str] = None
 
 
+class SubscriptionOut(BaseModel):
+    id: int
+    researcher_name: str
+    email: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # Researcher request schemas
 class ResearcherRequestCreate(BaseModel):
     openalex_id: str
@@ -54,6 +63,7 @@ class ResearcherRequestOut(BaseModel):
     display_name: str
     institution: Optional[str]
     works_count: int
+    requester_email: Optional[str]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

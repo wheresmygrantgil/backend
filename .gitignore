@@ -2,3 +2,6 @@
 .idea/
 __pycache__/
 venv/
+*.db
+admin_dashboard.py
+run_dashboard.ps1

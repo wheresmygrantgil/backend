@@ -7,7 +7,7 @@ from .database import get_db
 from .models import Vote, Subscription, ResearcherRequest
 from .schemas import (
     VoteSchema, VoteOut,
-    SubscriptionCreate, SubscriptionStatus,
+    SubscriptionCreate, SubscriptionStatus, SubscriptionOut,
     ResearcherRequestCreate, ResearcherRequestOut
 )
 from slowapi import Limiter
@@ -308,6 +308,13 @@ def mask_email(email: str) -> str:
     if len(local) <= 1:
         return f"{local[0]}***@{domain}"
     return f"{local[0]}***@{domain}"
+
+
+@router.get("/subscriptions", response_model=List[SubscriptionOut])
+def get_all_subscriptions(db: Session = Depends(get_db)):
+    """Get all subscriptions (admin endpoint)."""
+    subscriptions = db.query(Subscription).order_by(Subscription.created_at.desc()).all()
+    return subscriptions
 
 
 @router.get("/subscriptions/{researcher_name}", response_model=SubscriptionStatus)
