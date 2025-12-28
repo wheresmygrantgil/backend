@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from datetime import datetime
 from typing import Optional
 
@@ -32,6 +32,20 @@ class ResearcherRequestCreate(BaseModel):
     institution: Optional[str] = None
     works_count: int = 0
     requester_email: Optional[EmailStr] = None
+
+    @field_validator('requester_email', mode='before')
+    @classmethod
+    def empty_string_to_none(cls, v):
+        if v == '' or v is None:
+            return None
+        return v
+
+    @field_validator('institution', mode='before')
+    @classmethod
+    def empty_institution_to_none(cls, v):
+        if v == '' or v is None:
+            return None
+        return v
 
 
 class ResearcherRequestOut(BaseModel):
