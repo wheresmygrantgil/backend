@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from datetime import datetime
+from typing import Optional
 
 class VoteSchema(BaseModel):
     grant_id: str
@@ -11,3 +12,34 @@ class VoteSchema(BaseModel):
 
 class VoteOut(VoteSchema):
     timestamp: datetime
+
+
+# Subscription schemas
+class SubscriptionCreate(BaseModel):
+    researcher_name: str
+    email: EmailStr
+
+
+class SubscriptionStatus(BaseModel):
+    subscribed: bool
+    email_hint: Optional[str] = None
+
+
+# Researcher request schemas
+class ResearcherRequestCreate(BaseModel):
+    openalex_id: str
+    display_name: str
+    institution: Optional[str] = None
+    works_count: int = 0
+    requester_email: Optional[EmailStr] = None
+
+
+class ResearcherRequestOut(BaseModel):
+    id: int
+    openalex_id: str
+    display_name: str
+    institution: Optional[str]
+    works_count: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

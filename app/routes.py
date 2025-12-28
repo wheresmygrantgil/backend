@@ -2,12 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from urllib.parse import unquote
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
+from sqlalchemy.exc import IntegrityError
 from .database import get_db
-from .models import Vote
-from .schemas import VoteSchema, VoteOut
+from .models import Vote, Subscription, ResearcherRequest
+from .schemas import (
+    VoteSchema, VoteOut,
+    SubscriptionCreate, SubscriptionStatus,
+    ResearcherRequestCreate, ResearcherRequestOut
+)
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 import csv
 import io
 import json
@@ -291,3 +296,157 @@ def health_check(db: Session = Depends(get_db)):
         "top_grant": top_grant,
         "last_vote_timestamp": last_vote.isoformat() if last_vote else None
     }
+
+
+# ==================== SUBSCRIPTIONS ====================
+
+def mask_email(email: str) -> str:
+    """Mask email for privacy, e.g., 'john@example.com' -> 'j***@example.com'"""
+    if not email or '@' not in email:
+        return None
+    local, domain = email.split('@', 1)
+    if len(local) <= 1:
+        return f"{local[0]}***@{domain}"
+    return f"{local[0]}***@{domain}"
+
+
+@router.get("/subscriptions/{researcher_name}", response_model=SubscriptionStatus)
+def check_subscription(researcher_name: str, db: Session = Depends(get_db)):
+    """Check if a researcher has any subscriptions."""
+    researcher_name = unquote(researcher_name)
+    subscription = db.query(Subscription).filter(
+        Subscription.researcher_name == researcher_name
+    ).first()
+
+    if subscription:
+        return SubscriptionStatus(
+            subscribed=True,
+            email_hint=mask_email(subscription.email)
+        )
+    return SubscriptionStatus(subscribed=False)
+
+
+@router.post("/subscriptions")
+def create_subscription(sub: SubscriptionCreate, db: Session = Depends(get_db)):
+    """Create a new subscription. Rejects duplicates."""
+    existing = db.query(Subscription).filter(
+        Subscription.researcher_name == sub.researcher_name,
+        Subscription.email == sub.email
+    ).first()
+
+    if existing:
+        return {"status": "already_subscribed", "message": "You are already subscribed for this researcher."}
+
+    new_sub = Subscription(
+        researcher_name=sub.researcher_name,
+        email=sub.email
+    )
+    db.add(new_sub)
+    db.commit()
+    return {"status": "success", "message": "Subscription created successfully."}
+
+
+@router.get("/unsubscribe", response_class=HTMLResponse)
+def unsubscribe(email: str, researcher: str, db: Session = Depends(get_db)):
+    """Unsubscribe from email notifications. Called via link in emails."""
+    email = unquote(email)
+    researcher = unquote(researcher)
+
+    subscription = db.query(Subscription).filter(
+        Subscription.researcher_name == researcher,
+        Subscription.email == email
+    ).first()
+
+    if subscription:
+        db.delete(subscription)
+        db.commit()
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Unsubscribed</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }}
+                .container {{ background: white; padding: 40px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                h1 {{ color: #28a745; }}
+                p {{ color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Successfully Unsubscribed</h1>
+                <p>You have been unsubscribed from grant notifications for <strong>{researcher}</strong>.</p>
+                <p>You will no longer receive emails at <strong>{email}</strong>.</p>
+            </div>
+        </body>
+        </html>
+        """
+    else:
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Not Found</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+                .container { background: white; padding: 40px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: #dc3545; }
+                p { color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Subscription Not Found</h1>
+                <p>No subscription was found for this email and researcher combination.</p>
+                <p>You may have already unsubscribed.</p>
+            </div>
+        </body>
+        </html>
+        """
+
+
+# ==================== RESEARCHER REQUESTS ====================
+
+@router.post("/researcher-requests")
+def create_researcher_request(req: ResearcherRequestCreate, db: Session = Depends(get_db)):
+    """Submit a request to add a new researcher."""
+    existing = db.query(ResearcherRequest).filter(
+        ResearcherRequest.openalex_id == req.openalex_id
+    ).first()
+
+    if existing:
+        return {"status": "existing", "message": "This researcher has already been requested."}
+
+    new_req = ResearcherRequest(
+        openalex_id=req.openalex_id,
+        display_name=req.display_name,
+        institution=req.institution,
+        works_count=req.works_count,
+        requester_email=req.requester_email
+    )
+    db.add(new_req)
+    db.commit()
+    return {"status": "success", "message": "Request submitted successfully."}
+
+
+@router.get("/researcher-requests", response_model=List[ResearcherRequestOut])
+def get_researcher_requests(db: Session = Depends(get_db)):
+    """Get all pending researcher requests."""
+    requests = db.query(ResearcherRequest).order_by(ResearcherRequest.created_at.desc()).all()
+    return requests
+
+
+@router.delete("/researcher-requests/{openalex_id}")
+def delete_researcher_request(openalex_id: str, db: Session = Depends(get_db)):
+    """Delete a researcher request after it has been processed."""
+    openalex_id = unquote(openalex_id)
+    req = db.query(ResearcherRequest).filter(
+        ResearcherRequest.openalex_id == openalex_id
+    ).first()
+
+    if not req:
+        raise HTTPException(404, "Researcher request not found")
+
+    db.delete(req)
+    db.commit()
+    return {"status": "deleted", "message": "Request deleted successfully."}
