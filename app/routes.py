@@ -446,9 +446,12 @@ def get_researcher_requests(db: Session = Depends(get_db)):
     return requests
 
 
-@router.delete("/researcher-requests/{openalex_id}")
+@router.delete("/researcher-requests/{openalex_id:path}")
 def delete_researcher_request(openalex_id: str, db: Session = Depends(get_db)):
-    """Delete a researcher request after it has been processed."""
+    """Delete a researcher request after it has been processed.
+
+    Uses :path converter to capture the full openalex_id including slashes.
+    """
     openalex_id = unquote(openalex_id)
     req = db.query(ResearcherRequest).filter(
         ResearcherRequest.openalex_id == openalex_id
